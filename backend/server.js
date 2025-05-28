@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const { MongoClient, ObjectId } = require('mongodb');
+const path = require('path');
 const app = express();
 app.use(cors());
 
@@ -24,7 +25,7 @@ app.use(express.json());
     
 app.get("/", async (req, res) => {
     res.send('<h1>Olá TW ECGM</1>')
-})
+    })
 
 //Rotas alunos
 
@@ -50,8 +51,7 @@ app.get("/alunos/nome/:nome", async (req, res) => {
     res.json(alunos);
 });
 
-
-//listar cursos
+// Listar cursos
 app.get("/cursos", async (req, res) => {
     const cursos = await cursosCollection.find().toArray();
     res.json(cursos);
@@ -92,6 +92,40 @@ app.delete("/alunos/:id", async (req, res) => {
     }
     await alunosCollection.deleteOne({ _id: new ObjectId(id) });
     res.json({ msg: "Aluno removido" });
+});
+
+// Adicionar curso
+app.post("/cursos", async (req, res) => {
+    const novoCurso = req.body;
+    const resultado = await cursosCollection.insertOne(novoCurso);
+    res.status(201).json({ _id: resultado.insertedId, ...novoCurso });
+});
+
+// Atualizar curso
+app.put("/cursos/:id", async (req, res) => {
+    const id = req.params.id;
+    if (!isValidObjectId(id)) {
+        return res.status(400).json({ error: "ID inválido" });
+    }
+    const dados = req.body;
+    const resultado = await cursosCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: dados }
+    );
+    if (resultado.matchedCount === 0) {
+        return res.status(404).json({ error: "Curso não encontrado" });
+    }
+    res.json({ _id: id, ...dados });
+});
+
+// Apagar curso
+app.delete("/cursos/:id", async (req, res) => {
+    const id = req.params.id;
+    if (!isValidObjectId(id)) {
+        return res.status(400).json({ error: "ID inválido" });
+    }
+    await cursosCollection.deleteOne({ _id: new ObjectId(id) });
+    res.json({ msg: "Curso removido" });
 });
 
 function isValidObjectId(id) {
